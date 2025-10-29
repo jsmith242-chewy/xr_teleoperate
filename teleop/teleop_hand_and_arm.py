@@ -122,9 +122,9 @@ if __name__ == '__main__':
                 'head_camera_type': 'opencv',
                 'head_camera_image_shape': [480, 1280],  # Head camera resolution
                 'head_camera_id_numbers': [0],
-                'wrist_camera_type': 'opencv',
-                'wrist_camera_image_shape': [480, 640],  # Wrist camera resolution
-                'wrist_camera_id_numbers': [2, 4],
+                # 'wrist_camera_type': 'opencv',
+                # 'wrist_camera_image_shape': [480, 640],  # Wrist camera resolution
+                # 'wrist_camera_id_numbers': [2, 4],
             }
 
 
@@ -167,7 +167,7 @@ if __name__ == '__main__':
 
         # television: obtain hand pose data from the XR device and transmit the robot's head camera image to the XR device.
         tv_wrapper = TeleVuerWrapper(binocular=BINOCULAR, use_hand_tracking=args.xr_mode == "hand", img_shape=tv_img_shape, img_shm_name=tv_img_shm.name, 
-                                    return_state_data=True, return_hand_rot_data = False)
+                                    return_state_data=True, return_hand_rot_data = False) # , ngrok=True)
 
         # arm
         if args.arm == "G1_29":

@@ -84,7 +84,7 @@ class G1_29_ArmController:
         if self.simulation_mode:
             ChannelFactoryInitialize(1)
         else:
-            ChannelFactoryInitialize(0)
+            ChannelFactoryInitialize(0, "enx6c1ff75becc8")
 
         if self.motion_mode:
             self.lowcmd_publisher = ChannelPublisher(kTopicLowCommand_Motion, hg_LowCmd)
