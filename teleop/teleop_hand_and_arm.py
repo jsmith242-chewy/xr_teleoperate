@@ -91,6 +91,11 @@ if __name__ == '__main__':
     parser.add_argument('--task-dir', type = str, default = './utils/data/', help = 'path to save data')
     parser.add_argument('--task-name', type = str, default = 'pick cube', help = 'task name for recording')
     parser.add_argument('--task-desc', type = str, default = 'e.g. pick the red cube on the table.', help = 'task goal for recording')
+    # TODO: This should be auto detected
+    parser.add_argument('--iface', type = str, required = True, help = 'interface name for data transmission')
+    # TODO: This should be auto detected
+    parser.add_argument('--head-camera-id', type = int, default = 2, help = 'head camera id')
+    parser.add_argument('--ngrok', action='store_true')
 
     args = parser.parse_args()
     logger_mp.info(f"args: {args}")
@@ -111,7 +116,7 @@ if __name__ == '__main__':
                 'fps': 30,
                 'head_camera_type': 'opencv',
                 'head_camera_image_shape': [480, 640],  # Head camera resolution
-                'head_camera_id_numbers': [0],
+                'head_camera_id_numbers': [args.head_camera_id],
                 'wrist_camera_type': 'opencv',
                 'wrist_camera_image_shape': [480, 640],  # Wrist camera resolution
                 'wrist_camera_id_numbers': [2, 4],
@@ -120,8 +125,9 @@ if __name__ == '__main__':
             img_config = {
                 'fps': 30,
                 'head_camera_type': 'opencv',
-                'head_camera_image_shape': [480, 1280],  # Head camera resolution
-                'head_camera_id_numbers': [0],
+                # Weird resolution? Shouldn't it be 640x480? or 1280x720?
+                'head_camera_image_shape': [480, 640],  # Head camera resolution
+                'head_camera_id_numbers': [args.head_camera_id],
                 # 'wrist_camera_type': 'opencv',
                 # 'wrist_camera_image_shape': [480, 640],  # Wrist camera resolution
                 # 'wrist_camera_id_numbers': [2, 4],
@@ -167,21 +173,21 @@ if __name__ == '__main__':
 
         # television: obtain hand pose data from the XR device and transmit the robot's head camera image to the XR device.
         tv_wrapper = TeleVuerWrapper(binocular=BINOCULAR, use_hand_tracking=args.xr_mode == "hand", img_shape=tv_img_shape, img_shm_name=tv_img_shm.name, 
-                                    return_state_data=True, return_hand_rot_data = False) # , ngrok=True)
+                                    return_state_data=True, return_hand_rot_data = False, ngrok=args.ngrok)
 
         # arm
         if args.arm == "G1_29":
             arm_ik = G1_29_ArmIK()
-            arm_ctrl = G1_29_ArmController(motion_mode=args.motion, simulation_mode=args.sim)
+            arm_ctrl = G1_29_ArmController(motion_mode=args.motion, simulation_mode=args.sim, interface_name=args.iface)
         elif args.arm == "G1_23":
             arm_ik = G1_23_ArmIK()
-            arm_ctrl = G1_23_ArmController(motion_mode=args.motion, simulation_mode=args.sim)
+            arm_ctrl = G1_23_ArmController(motion_mode=args.motion, simulation_mode=args.sim, interface_name=args.iface)
         elif args.arm == "H1_2":
             arm_ik = H1_2_ArmIK()
-            arm_ctrl = H1_2_ArmController(motion_mode=args.motion, simulation_mode=args.sim)
+            arm_ctrl = H1_2_ArmController(motion_mode=args.motion, simulation_mode=args.sim, interface_name=args.iface)
         elif args.arm == "H1":
             arm_ik = H1_ArmIK()
-            arm_ctrl = H1_ArmController(simulation_mode=args.sim)
+            arm_ctrl = H1_ArmController(simulation_mode=args.sim, interface_name=args.iface)
 
         # end-effector
         if args.ee == "dex3":
@@ -263,21 +269,21 @@ if __name__ == '__main__':
         while not STOP:
             start_time = time.time()
 
-            if not args.headless:
-                tv_resized_image = cv2.resize(tv_img_array, (tv_img_shape[1] // 2, tv_img_shape[0] // 2))
-                cv2.imshow("record image", tv_resized_image)
-                # opencv GUI communication
-                key = cv2.waitKey(1) & 0xFF
-                if key == ord('q'):
-                    START = False
-                    STOP = True
-                    if args.sim:
-                        publish_reset_category(2, reset_pose_publisher)
-                elif key == ord('s'):
-                    RECORD_TOGGLE = True
-                elif key == ord('a'):
-                    if args.sim:
-                        publish_reset_category(2, reset_pose_publisher)
+            # if not args.headless:
+            #     tv_resized_image = cv2.resize(tv_img_array, (tv_img_shape[1] // 2, tv_img_shape[0] // 2))
+            #     cv2.imshow("record image", tv_resized_image)
+            #     # opencv GUI communication
+            #     key = cv2.waitKey(1) & 0xFF
+            #     if key == ord('q'):
+            #         START = False
+            #         STOP = True
+            #         if args.sim:
+            #             publish_reset_category(2, reset_pose_publisher)
+            #     elif key == ord('s'):
+            #         RECORD_TOGGLE = True
+            #     elif key == ord('a'):
+            #         if args.sim:
+            #             publish_reset_category(2, reset_pose_publisher)
 
             if args.record and RECORD_TOGGLE:
                 RECORD_TOGGLE = False
@@ -293,6 +299,8 @@ if __name__ == '__main__':
                         publish_reset_category(1, reset_pose_publisher)
             # get input data
             tele_data = tv_wrapper.get_motion_state_data()
+    
+            print(f"tele_data: {tele_data}")
             if (args.ee == "dex3" or args.ee == "inspire1" or args.ee == "brainco") and args.xr_mode == "hand":
                 with left_hand_pos_array.get_lock():
                     left_hand_pos_array[:] = tele_data.left_hand_pos.flatten()
