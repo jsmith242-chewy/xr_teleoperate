@@ -92,13 +92,20 @@ if __name__ == '__main__':
     parser.add_argument('--task-name', type = str, default = 'pick cube', help = 'task name for recording')
     parser.add_argument('--task-desc', type = str, default = 'e.g. pick the red cube on the table.', help = 'task goal for recording')
     # TODO: This should be auto detected
-    parser.add_argument('--iface', type = str, required = True, help = 'interface name for data transmission')
+    parser.add_argument('--iface', type = str, help = 'interface name for data transmission to robot. Not needed for simulation.')
     # TODO: This should be auto detected
     parser.add_argument('--head-camera-id', type = int, default = 2, help = 'head camera id')
     parser.add_argument('--ngrok', action='store_true')
 
     args = parser.parse_args()
     logger_mp.info(f"args: {args}")
+
+    # iface must be specified for real robot, but not for simulation
+    if args.sim:
+        assert args.iface is None, "iface must be None for simulation, as it will be automatically set to 'lo'"
+        args.iface = "lo"
+    else:
+        assert args.iface is not None, "iface must be specified for real robot! To determine the interface name, you can run `ifconfig` in a terminal."
 
     try:
         # ipc communication. client usage: see utils/ipc.py
@@ -117,9 +124,9 @@ if __name__ == '__main__':
                 'head_camera_type': 'opencv',
                 'head_camera_image_shape': [480, 640],  # Head camera resolution
                 'head_camera_id_numbers': [args.head_camera_id],
-                'wrist_camera_type': 'opencv',
-                'wrist_camera_image_shape': [480, 640],  # Wrist camera resolution
-                'wrist_camera_id_numbers': [2, 4],
+                # 'wrist_camera_type': 'opencv',
+                # 'wrist_camera_image_shape': [480, 640],  # Wrist camera resolution
+                # 'wrist_camera_id_numbers': [2, 4],
             }
         else:
             img_config = {

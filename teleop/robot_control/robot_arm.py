@@ -82,7 +82,7 @@ class G1_29_ArmController:
 
         # initialize lowcmd publisher and lowstate subscriber
         if self.simulation_mode or interface_name is None:
-            ChannelFactoryInitialize(1)
+            ChannelFactoryInitialize(1, interface_name)
         else:
             ChannelFactoryInitialize(0, interface_name)
 
