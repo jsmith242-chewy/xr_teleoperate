@@ -273,25 +273,15 @@ if __name__ == '__main__':
             time.sleep(0.01)
         logger_mp.info("start program.")
         arm_ctrl.speed_gradual_max()
+        left_bButton_time = None
+        right_close_state = np.array([-0.0300349,-0.930099,-0.157439,1.51264,1.72646,1.53592,1.71186])
+        left_close_state = np.array([-0.0321972,0.658828,1.5053,-1.61362,-1.77055,-1.6244,-1.78361])
+        right_open_state = np.array([-0.0290204,0.679469,-0.0411741,-0.0671038,-0.0410292,-0.0381968,-0.060765])
+        left_open_state = np.array([-0.10294,-0.913251,-0.0570956,-0.0390129,-0.0127923,-0.0529036,-0.0269407])
+                       
         while not STOP:
             start_time = time.time()
-
-            # if not args.headless:
-            #     tv_resized_image = cv2.resize(tv_img_array, (tv_img_shape[1] // 2, tv_img_shape[0] // 2))
-            #     cv2.imshow("record image", tv_resized_image)
-            #     # opencv GUI communication
-            #     key = cv2.waitKey(1) & 0xFF
-            #     if key == ord('q'):
-            #         START = False
-            #         STOP = True
-            #         if args.sim:
-            #             publish_reset_category(2, reset_pose_publisher)
-            #     elif key == ord('s'):
-            #         RECORD_TOGGLE = True
-            #     elif key == ord('a'):
-            #         if args.sim:
-            #             publish_reset_category(2, reset_pose_publisher)
-
+    
             if args.record and RECORD_TOGGLE:
                 RECORD_TOGGLE = False
                 if not RECORD_RUNNING:
@@ -306,8 +296,31 @@ if __name__ == '__main__':
                         publish_reset_category(1, reset_pose_publisher)
             # get input data
             tele_data = tv_wrapper.get_motion_state_data()
-    
-            print(f"tele_data: {tele_data}")
+            # Check if the Y (called Left B in tv wrapper code) button has been pressed for more than 2 seconds, indicating that the user wants to switch modes
+            if tele_data.tele_state.left_bButton:
+                if left_bButton_time is not None:
+                    print(f"made it to the bButton")
+                    if time.time() - left_bButton_time > 2:
+                        print(f"Left B button pressed for more than 2 seconds. left_bButton_time: {left_bButton_time}")
+                        # Switch modes
+                        with right_hand_pos_array.get_lock():
+                            try:
+                                right_hand_pos_array[:7] = right_close_state
+                                # left_hand_pos_array[:7] = left_close_state
+                            except Exception as e:
+                                print(f"an exception has happened, {e}")
+                        print(f"past the lock")
+                        # right_hand_pos_array[:] = right_close_state
+                        # left_hand_pos_array[:] = left_close_state
+                        print(f"tried to close the hands")
+                        
+                else:
+                    left_bButton_time = time.time()
+                    print(f"Left B button pressed. left_bButton_time: {left_bButton_time}")
+            else:
+                left_bButton_time = None
+                    
+            # print(f"tele_data: {tele_data}")
             if (args.ee == "dex3" or args.ee == "inspire1" or args.ee == "brainco") and args.xr_mode == "hand":
                 with left_hand_pos_array.get_lock():
                     left_hand_pos_array[:] = tele_data.left_hand_pos.flatten()
