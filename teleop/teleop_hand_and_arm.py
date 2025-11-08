@@ -96,6 +96,7 @@ if __name__ == '__main__':
     # TODO: This should be auto detected
     parser.add_argument('--head-camera-id', type = int, default = 2, help = 'head camera id')
     parser.add_argument('--ngrok', action='store_true')
+    parser.add_argument('--camera-server-address', type = str, default = '192.168.0.173', help = 'camera server address for image server')
 
     args = parser.parse_args()
     logger_mp.info(f"args: {args}")
@@ -172,7 +173,7 @@ if __name__ == '__main__':
             img_client = ImageClient(tv_img_shape = tv_img_shape, tv_img_shm_name = tv_img_shm.name, 
                                     wrist_img_shape = wrist_img_shape, wrist_img_shm_name = wrist_img_shm.name)
         else:
-            img_client = ImageClient(tv_img_shape = tv_img_shape, tv_img_shm_name = tv_img_shm.name)
+            img_client = ImageClient(tv_img_shape = tv_img_shape, tv_img_shm_name = tv_img_shm.name, server_address=args.camera_server_address)
 
         image_receive_thread = threading.Thread(target = img_client.receive_process, daemon = True)
         image_receive_thread.daemon = True
