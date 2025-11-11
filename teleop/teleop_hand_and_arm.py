@@ -322,6 +322,12 @@ if __name__ == '__main__':
             while not START and not STOP:
                 time.sleep(0.01)
         arm_ctrl.speed_gradual_max()
+        left_bButton_time = None
+        right_close_state = np.array([-0.0300349,-0.930099,-0.157439,1.51264,1.72646,1.53592,1.71186])
+        left_close_state = np.array([-0.0321972,0.658828,1.5053,-1.61362,-1.77055,-1.6244,-1.78361])
+        right_open_state = np.array([-0.0290204,0.679469,-0.0411741,-0.0671038,-0.0410292,-0.0381968,-0.060765])
+        left_open_state = np.array([-0.10294,-0.913251,-0.0570956,-0.0390129,-0.0127923,-0.0529036,-0.0269407])
+                       
         while not STOP:
             start_time = time.time()
 
@@ -363,6 +369,33 @@ if __name__ == '__main__':
                 # Control is enabled if Y button was previously pressed and B button is not pressed for it's press duration
                 CONTROL_ENABLED = (CONTROL_ENABLED or button_tracker.get_button_state("Y")) and not button_tracker.get_button_state("B")
 
+            # Check if the Y (called Left B in tv wrapper code) button has been pressed for more than 2 seconds, indicating that the user wants to switch modes
+            if tele_data.tele_state.left_bButton:
+                if left_bButton_time is not None:
+                    print(f"made it to the bButton")
+                    if time.time() - left_bButton_time > 2:
+                        print(f"Left B button pressed for more than 2 seconds. left_bButton_time: {left_bButton_time}")
+                        # Switch modes
+                        with right_hand_pos_array.get_lock():
+                            try:
+                                right_hand_pos_array[:7] = right_close_state
+                                # left_hand_pos_array[:7] = left_close_state
+                            except Exception as e:
+                                print(f"an exception has happened, {e}")
+                        print(f"past the lock")
+                        # right_hand_pos_array[:] = right_close_state
+                        # left_hand_pos_array[:] = left_close_state
+                        print(f"tried to close the hands")
+                        
+                else:
+                    left_bButton_time = time.time()
+                    print(f"Left B button pressed. left_bButton_time: {left_bButton_time}")
+            else:
+                left_bButton_time = None
+                    
+            # get current robot state data.
+            current_lr_arm_q  = arm_ctrl.get_current_dual_arm_q()
+            current_lr_arm_dq = arm_ctrl.get_current_dual_arm_dq()
 
             if CONTROL_ENABLED:
                 # Only control the robot if the controller is enabled
@@ -394,9 +427,12 @@ if __name__ == '__main__':
                     if tele_data.tele_state.left_thumbstick_state and tele_data.tele_state.right_thumbstick_state:
                         sport_client.Damp()
                     # control, limit velocity to within 0.3
-                    sport_client.Move(-tele_data.tele_state.left_thumbstick_value[1]  * 0.3,
-                                    -tele_data.tele_state.left_thumbstick_value[0]  * 0.3,
-                                    -tele_data.tele_state.right_thumbstick_value[0] * 0.3)
+                    try:
+                        sport_client.Move(-tele_data.tele_state.left_thumbstick_value[1]  * 0.3,
+                                        -tele_data.tele_state.left_thumbstick_value[0]  * 0.3,
+                                        -tele_data.tele_state.right_thumbstick_value[0] * 0.3)
+                    except Exception as e:
+                        print(f"An exception has happened while trying to move the robot via LocoClient.Move() Exception: {e}")
 
                 # get current robot state data.
                 current_lr_arm_q  = arm_ctrl.get_current_dual_arm_q()
