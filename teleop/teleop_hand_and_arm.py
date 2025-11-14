@@ -374,30 +374,6 @@ if __name__ == '__main__':
                 # Control is enabled if Y button was previously pressed and B button is not pressed for it's press duration
                 CONTROL_ENABLED = (CONTROL_ENABLED or button_tracker.get_button_state("Y")) and not button_tracker.get_button_state("B")
 
-            # Check if the Y (called Left B in tv wrapper code) button has been pressed for more than 2 seconds, indicating that the user wants to switch modes
-            if tele_data.tele_state.left_bButton:
-                if left_bButton_time is not None:
-                    print(f"made it to the bButton")
-                    if time.time() - left_bButton_time > 2:
-                        print(f"Left B button pressed for more than 2 seconds. left_bButton_time: {left_bButton_time}")
-                        # Switch modes
-                        with right_hand_pos_array.get_lock():
-                            try:
-                                right_hand_pos_array[:7] = right_close_state
-                                # left_hand_pos_array[:7] = left_close_state
-                            except Exception as e:
-                                print(f"an exception has happened, {e}")
-                        print(f"past the lock")
-                        # right_hand_pos_array[:] = right_close_state
-                        # left_hand_pos_array[:] = left_close_state
-                        print(f"tried to close the hands")
-                        
-                else:
-                    left_bButton_time = time.time()
-                    print(f"Left B button pressed. left_bButton_time: {left_bButton_time}")
-            else:
-                left_bButton_time = None
-                    
             # get current robot state data.
             current_lr_arm_q  = arm_ctrl.get_current_dual_arm_q()
             current_lr_arm_dq = arm_ctrl.get_current_dual_arm_dq()
