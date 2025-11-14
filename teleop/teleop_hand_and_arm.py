@@ -301,6 +301,8 @@ if __name__ == '__main__':
             sport_client = LocoClient()
             sport_client.SetTimeout(0.0001)
             sport_client.Init()
+            # This doesn't seem to actually do anything 
+            # sport_client.LowStand()
         
         # record + headless mode
         if args.record and args.headless:
@@ -308,21 +310,21 @@ if __name__ == '__main__':
         elif args.record and not args.headless:
             recorder = EpisodeWriter(task_dir = args.task_dir + args.task_name, task_goal = args.task_desc, frequency = args.frequency, rerun_log = True)
 
-        print(f"Put on your VR headset and re-fresh the browser window to start VR control.")
-        print(f"To ensure safe operation, ensure that your arms are matching the robot's pose, and you and the robot are clear of obstacles.")
-        print(f"The Televuer browser window should display the robot's first person view in the headset. If you do not see it, ensure that you have run the `image_server.py` program on the robot's development computing unit or that the simulation is running and publishing images over ZMQ.")
+        logger_mp.info(f"Put on your VR headset and re-fresh the browser window to start VR control.")
+        logger_mp.info(f"To ensure safe operation, ensure that your arms are matching the robot's pose, and you and the robot are clear of obstacles.")
+        logger_mp.info(f"The Televuer browser window should display the robot's first person view in the headset. If you do not see it, ensure that you have run the `image_server.py` program on the robot's development computing unit or that the simulation is running and publishing images over ZMQ.")
 
-        print(f"--------------------------------")
+        logger_mp.info(f"--------------------------------")
         
         if args.xr_mode == "controller":
-            print(f"Controller mode:")
-            print(f"\tPress the Y button to start the program after you have put on your VR headset and clicked the 'Enter VR' button in the browser.")
-            print(f"\tTo stop VR teleoperation, press the B button on the controller.")
+            logger_mp.info(f"Controller mode:")
+            logger_mp.info(f"\tPress the Y button to start the program after you have put on your VR headset and clicked the 'Enter VR' button in the browser.")
+            logger_mp.info(f"\tTo stop VR teleoperation, press the B button on the controller.")
         if args.xr_mode == "hand":
-            print(f"Hand tracking mode:")
-            print(f"\tIf you are using the hand tracking, you must first press 'r' on the keyboard after you have put on your VR headset and clicked the 'Enter VR' button in the browser.")
+            logger_mp.info(f"Hand tracking mode:")
+            logger_mp.info(f"\tIf you are using the hand tracking, you must first press 'r' on the keyboard after you have put on your VR headset and clicked the 'Enter VR' button in the browser.")
 
-        print(f"To exit the program, press the 'q' key on the keyboard  (regardless of the mode you are using).")
+        logger_mp.info(f"To exit the program, press the 'q' key on the keyboard  (regardless of the mode you are using).")
 
 
         if not args.xr_mode == "controller":
@@ -330,11 +332,6 @@ if __name__ == '__main__':
             while not START and not STOP:
                 time.sleep(0.01)
         arm_ctrl.speed_gradual_max()
-        left_bButton_time = None
-        right_close_state = np.array([-0.0300349,-0.930099,-0.157439,1.51264,1.72646,1.53592,1.71186])
-        left_close_state = np.array([-0.0321972,0.658828,1.5053,-1.61362,-1.77055,-1.6244,-1.78361])
-        right_open_state = np.array([-0.0290204,0.679469,-0.0411741,-0.0671038,-0.0410292,-0.0381968,-0.060765])
-        left_open_state = np.array([-0.10294,-0.913251,-0.0570956,-0.0390129,-0.0127923,-0.0529036,-0.0269407])
                        
         while not STOP:
             start_time = time.time()
