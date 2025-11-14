@@ -418,21 +418,32 @@ if __name__ == '__main__':
                     pass        
                 
                 # high level control
-                if args.xr_mode == "controller" and args.motion:
-                    # quit teleoperate
-                    if tele_data.tele_state.right_aButton:
-                        START = False
-                        STOP = True
-                    # command robot to enter damping mode. soft emergency stop function
-                    if tele_data.tele_state.left_thumbstick_state and tele_data.tele_state.right_thumbstick_state:
-                        sport_client.Damp()
-                    # control, limit velocity to within 0.3
+                if args.xr_mode == "controller":
+                    if args.motion:
+                        # We only use the loco client if in 'motion' mode
+                        # command robot to enter damping mode. soft emergency stop function
+                        if tele_data.tele_state.left_thumbstick_state and tele_data.tele_state.right_thumbstick_state:
+                            sport_client.Damp()
+                        # control, limit velocity to within 0.3
+                        try:
+                            sport_client.Move(-tele_data.tele_state.left_thumbstick_value[1]  * 0.3,
+                                            -tele_data.tele_state.left_thumbstick_value[0]  * 0.3,
+                                            -tele_data.tele_state.right_thumbstick_value[0] * 0.3)
+                        except Exception as e:
+                            logger_mp.error(f"An exception has happened while trying to move the robot via LocoClient.Move() Exception: {e}")
+
+                    # Waist control is done via arm_ctrl, so 'motion' mode is not a requirement
                     try:
-                        sport_client.Move(-tele_data.tele_state.left_thumbstick_value[1]  * 0.3,
-                                        -tele_data.tele_state.left_thumbstick_value[0]  * 0.3,
-                                        -tele_data.tele_state.right_thumbstick_value[0] * 0.3)
+                        # Use the trigger value to move the waist
+                        if tele_data.tele_state.left_trigger_state:
+                            arm_ctrl._move_waist(0.01)
+                        elif tele_data.tele_state.right_trigger_state:
+                            arm_ctrl._move_waist(-0.01)
+                        else:
+                            arm_ctrl._move_waist(0.0)
                     except Exception as e:
-                        print(f"An exception has happened while trying to move the robot via LocoClient.Move() Exception: {e}")
+                        logger_mp.error(f"An exception has happened while trying to move the waist via ArmController.move_waist() Exception: {e}")
+
 
                 # get current robot state data.
                 current_lr_arm_q  = arm_ctrl.get_current_dual_arm_q()

@@ -71,6 +71,7 @@ class G1_29_ArmController:
         self.kd_low = 3.0
         self.kp_wrist = 40.0
         self.kd_wrist = 1.5
+        self.torso_q = 0.0
 
         self.all_motor_q = None
         self.arm_velocity_limit = 20.0
@@ -172,6 +173,7 @@ class G1_29_ArmController:
             with self.ctrl_lock:
                 arm_q_target     = self.q_target
                 arm_tauff_target = self.tauff_target
+                self.msg.motor_cmd[12].q = self.torso_q
 
             if self.simulation_mode:
                 cliped_arm_q_target = arm_q_target
@@ -196,6 +198,12 @@ class G1_29_ArmController:
             time.sleep(sleep_time)
             # logger_mp.debug(f"arm_velocity_limit:{self.arm_velocity_limit}")
             # logger_mp.debug(f"sleep_time:{sleep_time}")
+
+    def _move_waist(self, waist_yaw_delta, min_waist_yaw=-2.618, max_waist_yaw=2.618):
+        '''Move the waist by the given delta in yaw, clipped between min_waist_yaw and max_waist_yaw.'''
+        new_waist = self.torso_q + waist_yaw_delta
+        with self.ctrl_lock:
+            self.torso_q = min(max(new_waist, min_waist_yaw), max_waist_yaw)
 
     def ctrl_dual_arm(self, q_target, tauff_target):
         '''Set control target values q & tau of the left and right arm motors.'''
