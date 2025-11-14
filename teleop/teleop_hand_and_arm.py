@@ -17,7 +17,7 @@ sys.path.append(parent_dir)
 from televuer import TeleVuerWrapper, TeleStateData
 from teleop.robot_control.robot_arm import G1_29_ArmController, G1_23_ArmController, H1_2_ArmController, H1_ArmController
 from teleop.robot_control.robot_arm_ik import G1_29_ArmIK, G1_23_ArmIK, H1_2_ArmIK, H1_ArmIK
-from teleop.robot_control.robot_hand_unitree import Dex3_1_Controller, Dex1_1_Gripper_Controller
+from teleop.robot_control.robot_hand_unitree import Dex3_1_Controller, Dex1_1_Gripper_Controller, Dex3_1_Controller_v2
 from teleop.robot_control.robot_hand_inspire import Inspire_Controller
 from teleop.robot_control.robot_hand_brainco import Brainco_Controller
 from teleop.image_server.image_client import ImageClient
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     # basic control parameters
     parser.add_argument('--xr-mode', type=str, choices=['hand', 'controller'], default='hand', help='Select XR device tracking source')
     parser.add_argument('--arm', type=str, choices=['G1_29', 'G1_23', 'H1_2', 'H1'], default='G1_29', help='Select arm controller')
-    parser.add_argument('--ee', type=str, choices=['dex1', 'dex3', 'inspire1', 'brainco'], help='Select end effector controller')
+    parser.add_argument('--ee', type=str, choices=['dex1', 'dex3', 'dex3_v2', 'inspire1', 'brainco'], help='Select end effector controller')
     # mode flags
     parser.add_argument('--motion', action = 'store_true', help = 'Enable motion control mode')
     parser.add_argument('--headless', action='store_true', help='Enable headless mode (no display)')
@@ -237,6 +237,14 @@ if __name__ == '__main__':
             dual_hand_state_array = Array('d', 14, lock = False)   # [output] current left, right hand state(14) data.
             dual_hand_action_array = Array('d', 14, lock = False)  # [output] current left, right hand action(14) data.
             hand_ctrl = Dex3_1_Controller(left_hand_pos_array, right_hand_pos_array, dual_hand_data_lock, dual_hand_state_array, dual_hand_action_array, simulation_mode=args.sim)
+        elif args.ee == "dex3_v2":
+            assert args.xr_mode == "controller", "Dex3_1_Controller_v2 only supports controller mode"
+            left_hand_pos_array = Array('d', 7, lock = True)      # [input]
+            right_hand_pos_array = Array('d', 7, lock = True)     # [input]
+            dual_hand_data_lock = Lock()
+            dual_hand_state_array = Array('d', 14, lock = False)   # [output] current left, right hand state(14) data.
+            dual_hand_action_array = Array('d', 14, lock = False)  # [output] current left, right hand action(14) data.
+            hand_ctrl = Dex3_1_Controller_v2(left_hand_pos_array, right_hand_pos_array, dual_hand_data_lock, dual_hand_state_array, dual_hand_action_array, simulation_mode=args.sim)
         elif args.ee == "dex1":
             left_gripper_value = Value('d', 0.0, lock=True)        # [input]
             right_gripper_value = Value('d', 0.0, lock=True)       # [input]
@@ -414,6 +422,20 @@ if __name__ == '__main__':
                         left_gripper_value.value = tele_data.left_pinch_value
                     with right_gripper_value.get_lock():
                         right_gripper_value.value = tele_data.right_pinch_value
+                elif args.ee == "dex3_v2" and args.xr_mode == "controller":
+                    # If left hand is squeezing, the value is [-0.0321972,0.658828,1.5053,-1.61362,-1.77055,-1.6244,-1.78361];
+                    if tele_data.tele_state.left_squeeze_ctrl_state:
+                        with left_hand_pos_array.get_lock():
+                            left_hand_pos_array[:] = [-0.0321972,0.658828,1.5053,-1.61362,-1.77055,-1.6244,-1.78361]
+                    else:
+                        with left_hand_pos_array.get_lock():
+                            left_hand_pos_array[:] = [-0.10294,-0.913251,-0.0570956,-0.0390129,-0.0127923,-0.0529036,-0.0269407]
+                    if tele_data.tele_state.right_squeeze_ctrl_state:
+                        with right_hand_pos_array.get_lock():
+                            right_hand_pos_array[:] = [-0.0300349,-0.930099,-0.157439,1.51264,1.72646,1.53592,1.71186]
+                    else:
+                        with right_hand_pos_array.get_lock():
+                            right_hand_pos_array[:] = [-0.0290204,0.679469,-0.0411741,-0.0671038,-0.0410292,-0.0381968,-0.060765]
                 else:
                     pass        
                 
